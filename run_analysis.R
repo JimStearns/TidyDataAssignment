@@ -70,7 +70,9 @@ inframes$train.y = read.table(infiles$train.y, header=FALSE)
 #   - Column merge subject_test, X_test and y_test (column bind).
 #   - Column merge subject_train, X_train and y_train (column bind).
 # 2. Combine test and train data into a single file (row bind)
-# 3. Convert activity column from integer to factor with labels from activity_labels.txt.
+# 3. Use descriptive activity names to name the activities in the data set
+#   (one option: convert activity column from integer to factor with labels 
+#   from activity_labels.txt). Or just add activityDescription column.
 # 4. Label each column with labels from features.txt.
 # 5. Eliminate all columns not having either "mean()" or "std()" in its label.
 # 6. Sort by subject, then by activity.
@@ -96,18 +98,54 @@ train.merge <- cbind(inframes$train.subject, inframes$train.y, inframes$train.X)
 # 2. Combine test and train data into a single file (row bind)
 test.and.train <- rbind(train.merge, test.merge)
 
-# 3. Convert activity column from integer to factor with labels from activity_labels.txt.
+# 4. Label each column with "tidied" labels from features.txt.
+#   By "tidied", column labels are:
+#   - all lowercase.
+#   - descriptive (avoid cryptic abbreviations). But there is a data dictionary.
+#   - avoid underscores and white spaces. My rule: allow periods, within reason:
+#       strip trailing periods, downsize a sequence of multiple periods to just one.
+#   - not duplicated.
+make.tidy.column.names <- function(raw.column.names) {
+    # 1. apply make.names(), requiring uniqueness, disallowing underscores.
+    #       This takes care of spaces as well.
+    # 2. tolower.
+    # 3. Allow periods, but trim excesses (multiple, trailing)
+    # 4. Left "bodybody" as is.
+    tidy.names.1 <- tolower(make.names(raw.column.names, unique=TRUE, allow_=FALSE))
+    tidy.names.singledots = gsub("\\.$", "", gsub("(\\.){2,}", "\\.", tidy.names.1))
 
-
-# 4. Label each column with labels from features.txt.
-feature.label.vector = as.vector(inframes$feature.labels$desc)
+    if (length(tidy.names.singledots) > length(unique(tidy.names.singledots))) {
+        stop("make.tidy.column.names: at least one column label is repeated.")
+    }
+    return(tidy.names.singledots)
+}
+feature.label.vector = as.vector(make.tidy.column.names(inframes$feature.labels$desc))
 colnames(test.and.train) <- c("subject", "activity", feature.label.vector)
 
-# 5. Eliminate all columns not having either "mean()" or "std()" in its label.
+# 3. Use descriptive activity names to name the activities in the data set
+#   (one option: convert activity column from integer to factor with labels 
+#   from activity_labels.txt). Or just add activityDescription column.
+#test.and.train$activity.desc <- 
+#    inframes$activity.labels$desc[as.integer(test.and.train$activity)]
+test.and.train2 = cbind(test.and.train[,1:2], 
+                        inframes$activity.labels$desc[as.integer(test.and.train$activity)],
+                        test.and.train[,3:ncol(test.and.train)])
+names(test.and.train2)[3] <- "activity.desc"
+
+# 5. Eliminate all columns not having either "mean()" or "std()" in its original label.
+##  Skip gravitymean; just column labels containing ".mean" or ".std" after label tidying.
+##  Keep columns "subject", "activity", and "activity.desc".
+mean.or.std.col.indices <- grep("(\\.mean|\\.std)", feature.label.vector)
+mean.or.std.col.names <- feature.label.vector[mean.or.std.col.indices]
+collist = c("subject", "activity", "activity.desc", mean.or.std.col.names)
+tidy.data.detailed <- test.and.train2[,collist]
 
 # 6. Sort by subject, then by activity.
+tidy.data.detailed.sorted <- tidy.data.detailed[
+    order(tidy.data.detailed$subject, tidy.data.detailed$activity),]
 
-# 7. Save dataset as TidyData_detailed.csv.txt
+# 7. Save dataset as tidydata_detailed.csv.txt
+write.csv(tidy.data.detailed.sorted, file="tidydata_detailed.csv.txt", row.names=FALSE)
 
 # 8. Using this tidy but detailed file as input, create a second, independent 
 #   tidy data set with the average of each variable for each activity 
@@ -117,5 +155,12 @@ colnames(test.and.train) <- c("subject", "activity", feature.label.vector)
 #       - There are 6 activities (walking etc.)
 #       - Each subject participated in every activity.
 #       - There should be 180 rows of data in this tidy summary file.
-#   - Save the second dataset to current working directory as "TidyData_summary.csv.txt"
+#   - Save the second dataset to current working directory as "tidydata_summary.csv.txt"
 #       (.txt allows file to be uploaded to Coursera)
+library(data.table)
+detail.dt <- data.table(tidy.data.detailed.sorted)
+#summary.dt <- detail.dt[,sum(by='subject, activity']
+summary.dt <- detail.dt[, lapply(.SD, mean), 
+                        by=list(subject, activity), 
+                        .SDcols=mean.or.std.col.names]
+write.csv(summary.dt, file="tidydata_summary.csv.txt", row.names=FALSE)
