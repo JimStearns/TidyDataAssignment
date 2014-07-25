@@ -42,24 +42,8 @@ infiles$train.subject = tryInPwdAndSubdir("subject_train.txt", "train")
 infiles$train.X = tryInPwdAndSubdir("X_train.txt", "train")
 infiles$train.y = tryInPwdAndSubdir("y_train.txt", "train")
 
-# Also store in a list the data frames for each of the input data files.
-inframes <- vector(mode='list', length=8)
-names(infiles) <- c("activity.labels", "feature.labels", "test.subject", "test.X", "test.y", "train.subject", "train.X", "train.y")
-# Put the file names/paths to use in this dictionary.
-inframes$activity.labels = read.table(infiles$activity.labels, header=FALSE, 
-                                      sep=" ", col.names=c("num", "desc"))
-inframes$feature.labels = read.table(infiles$feature.labels, header=FALSE,
-                                     sep=" ", col.names=c("num", "desc"))
-
-inframes$test.subject = read.table(infiles$test.subject, header=FALSE)
-inframes$test.X = read.table(infiles$test.X, header=FALSE)
-inframes$test.y = read.table(infiles$test.y, header=FALSE)
-
-inframes$train.subject = read.table(infiles$train.subject, header=FALSE)
-inframes$train.X = read.table(infiles$train.X, header=FALSE)
-inframes$train.y = read.table(infiles$train.y, header=FALSE)
-
 #### Summary of processing ####
+# 0. Read each of the 8 input data files into its own data frame.
 # 1. Merge subject number, activity, and measurements in two contexts:
 #   training set and test set:
 #   - Column merge subject_test, X_test and y_test (column bind).
@@ -82,6 +66,24 @@ inframes$train.y = read.table(infiles$train.y, header=FALSE)
 #       - There should be 180 rows of data in this tidy summary file.
 #   - Save the second dataset to current working directory as "TidyData_summary.csv.txt"
 #       (.txt allows file to be uploaded to Coursera)
+
+# 0. Read each of the 8 input data files into its own data frame.
+#   Store as a list the data tables.
+inframes <- vector(mode='list', length=8)
+names(infiles) <- c("activity.labels", "feature.labels", "test.subject", "test.X", "test.y", "train.subject", "train.X", "train.y")
+
+inframes$activity.labels = read.table(infiles$activity.labels, header=FALSE, 
+                                      sep=" ", col.names=c("num", "desc"))
+inframes$feature.labels = read.table(infiles$feature.labels, header=FALSE,
+                                     sep=" ", col.names=c("num", "desc"))
+
+inframes$test.subject = read.table(infiles$test.subject, header=FALSE)
+inframes$test.X = read.table(infiles$test.X, header=FALSE)
+inframes$test.y = read.table(infiles$test.y, header=FALSE)
+
+inframes$train.subject = read.table(infiles$train.subject, header=FALSE)
+inframes$train.X = read.table(infiles$train.X, header=FALSE)
+inframes$train.y = read.table(infiles$train.y, header=FALSE)
 
 # 1. Merge subject number, activity, and measurements in two contexts:
 #   training set and test set:
@@ -114,14 +116,12 @@ make.tidy.column.names <- function(raw.column.names) {
     }
     return(tidy.names.singledots)
 }
+# Assign the tidy column labels to the columns.
 feature.label.vector = as.vector(make.tidy.column.names(inframes$feature.labels$desc))
 colnames(test.and.train) <- c("subject", "activity", feature.label.vector)
 
 # 4. Use descriptive activity names to name the activities in the data set
-#   (one option: convert activity column from integer to factor with labels 
-#   from activity_labels.txt). Or just add activityDescription column.
-#test.and.train$activity.desc <- 
-#    inframes$activity.labels$desc[as.integer(test.and.train$activity)]
+#   Decided to keep the activity number (1:6) and add an activity.desc column.
 test.and.train2 = cbind(test.and.train[,1:2], 
                         inframes$activity.labels$desc[as.integer(test.and.train$activity)],
                         test.and.train[,3:ncol(test.and.train)])
@@ -162,7 +162,7 @@ write.csv(tidy.data.detailed.sorted, file="tidydata_detailed.csv.txt", row.names
 #   - Save the second dataset to current working directory as "tidydata_summary.csv.txt"
 #       (.txt allows file to be uploaded to Coursera)
 
-# Data.tables are helpful:
+# Data.tables will be helpful for summarizing by groups of subjects and activities:
 library(data.table)
 detail.dt <- data.table(tidy.data.detailed.sorted)
 
