@@ -3,21 +3,25 @@
 # File: run_analysis.R
 # Due Date: 27-Jul-2014
 
-# Overview
+# Overview: read in 8 datasets and output a summary of the 
+# combined train and test datasets - the average for each subject/activity combination
+# of attributes relating to the attribute's mean or standard deviation.
 
-# Assumes that raw data files exists in current working directory.
-# I.e. this script "can be run as long as the Samsung data is in your working directory"
-#
+# Track the file names of the 8 input files in a list structure:
+infiles <- vector(mode='list', length=8)
+names(infiles) <- c("activity.labels", "feature.labels", "test.subject", "test.X", "test.y", "train.subject", "train.X", "train.y")
+
+# The files containing labels for activities (walking et al) and features (body acceleration et al)
+# must be in PWD.
+infiles$activity.labels = "activity_labels.txt"
+infiles$feature.labels = "features.txt"
+stopifnot(file.exists(infiles$activity.labels), file.exists(infiles$feature.labels))
+
 # Unclear from instructions: have test and train data files been flattened 
 # so they're all in PWD, or are they in the "test" and "train" subdirectories?
-# This script will work with either. It looks first in PWD, then in subdirectory
-# of PWD
-# Labels for activities (walking et al) and features (body acceleration et al)
-# must be in PWD.
-activity.labels.file = "activity_labels.txt"
-feature.labels.file = "features.txt"
-stopifnot(file.exists(activity.labels.file), file.exists(feature.labels.file))
+# This script will work with either. 
 
+# Function to look for file first in PWD, then in specified subdirectory of PWD.
 tryInPwdAndSubdir <- function(file, subdir) {
     if (file.exists(file)) {
         return(file)
@@ -30,27 +34,15 @@ tryInPwdAndSubdir <- function(file, subdir) {
                "' in current directory or subdirectory '", subdir, "'.", sep=""))
 }
 
-test.subject.file = tryInPwdAndSubdir("subject_test.txt", "test")
-test.X.file = tryInPwdAndSubdir("X_test.txt", "test")
-test.y.file = tryInPwdAndSubdir("y_test.txt", "test")
+infiles$test.subject = tryInPwdAndSubdir("subject_test.txt", "test")
+infiles$test.X = tryInPwdAndSubdir("X_test.txt", "test")
+infiles$test.y = tryInPwdAndSubdir("y_test.txt", "test")
 
-train.subject.file = tryInPwdAndSubdir("subject_train.txt", "train")
-train.X.file = tryInPwdAndSubdir("X_train.txt", "train")
-train.y.file = tryInPwdAndSubdir("y_train.txt", "train")
+infiles$train.subject = tryInPwdAndSubdir("subject_train.txt", "train")
+infiles$train.X = tryInPwdAndSubdir("X_train.txt", "train")
+infiles$train.y = tryInPwdAndSubdir("y_train.txt", "train")
 
-## Testing 1,2,3: use function to check inputs and return list of input files.
-infiles <- vector(mode='list', length=8)
-names(infiles) <- c("activity.labels", "feature.labels", "test.subject", "test.X", "test.y", "train.subject", "train.X", "train.y")
-# Put the file names/paths to use in this dictionary.
-infiles$activity.labels = activity.labels.file
-infiles$feature.labels = feature.labels.file
-infiles$test.subject = test.subject.file
-infiles$test.X = test.X.file
-infiles$test.y = test.y.file
-infiles$train.subject = train.subject.file
-infiles$train.X = train.X.file
-infiles$train.y = train.y.file
-
+# Also store in a list the data frames for each of the input data files.
 inframes <- vector(mode='list', length=8)
 names(infiles) <- c("activity.labels", "feature.labels", "test.subject", "test.X", "test.y", "train.subject", "train.X", "train.y")
 # Put the file names/paths to use in this dictionary.
@@ -58,14 +50,16 @@ inframes$activity.labels = read.table(infiles$activity.labels, header=FALSE,
                                       sep=" ", col.names=c("num", "desc"))
 inframes$feature.labels = read.table(infiles$feature.labels, header=FALSE,
                                      sep=" ", col.names=c("num", "desc"))
+
 inframes$test.subject = read.table(infiles$test.subject, header=FALSE)
 inframes$test.X = read.table(infiles$test.X, header=FALSE)
 inframes$test.y = read.table(infiles$test.y, header=FALSE)
+
 inframes$train.subject = read.table(infiles$train.subject, header=FALSE)
 inframes$train.X = read.table(infiles$train.X, header=FALSE)
 inframes$train.y = read.table(infiles$train.y, header=FALSE)
 
-#### Summary ####
+#### Summary of processing ####
 # 1. Merge subject number, activity, and measurements in two contexts:
 #   training set and test set:
 #   - Column merge subject_test, X_test and y_test (column bind).
@@ -99,7 +93,7 @@ train.merge <- cbind(inframes$train.subject, inframes$train.y, inframes$train.X)
 # 2. Combine test and train data into a single file (row bind)
 test.and.train <- rbind(train.merge, test.merge)
 
-# 4. Label each column with "tidied" labels from features.txt.
+# 3. Label each column with "tidied" labels from features.txt.
 #   By "tidied", column labels are:
 #   - all lowercase.
 #   - descriptive (avoid cryptic abbreviations). But there is a data dictionary.
@@ -123,7 +117,7 @@ make.tidy.column.names <- function(raw.column.names) {
 feature.label.vector = as.vector(make.tidy.column.names(inframes$feature.labels$desc))
 colnames(test.and.train) <- c("subject", "activity", feature.label.vector)
 
-# 3. Use descriptive activity names to name the activities in the data set
+# 4. Use descriptive activity names to name the activities in the data set
 #   (one option: convert activity column from integer to factor with labels 
 #   from activity_labels.txt). Or just add activityDescription column.
 #test.and.train$activity.desc <- 
@@ -167,8 +161,11 @@ write.csv(tidy.data.detailed.sorted, file="tidydata_detailed.csv.txt", row.names
 #       - There should be 180 rows of data in this tidy summary file.
 #   - Save the second dataset to current working directory as "tidydata_summary.csv.txt"
 #       (.txt allows file to be uploaded to Coursera)
+
+# Data.tables are helpful:
 library(data.table)
 detail.dt <- data.table(tidy.data.detailed.sorted)
+
 # Use the helpful grouping functionality of data.tables, in particular
 # "lapply" combined with the ".SD" variable and the "by" sorting specifier.
 # Please see http://stackoverflow.com/questions/16513827/r-summarizing-multiple-columns-with-data-table
@@ -180,6 +177,7 @@ detail.dt <- data.table(tidy.data.detailed.sorted)
 summary.dt <- detail.dt[, lapply(.SD, mean), 
                         by=list(subject, activity, activity.desc), 
                         .SDcols=mean.or.std.col.names]
+
 # Write the csv file with a .txt suffix to allow upload to Coursera.
 # row.names=FALSE: don't include a row number column.
 write.csv(summary.dt, file="tidydata_summary.csv.txt", row.names=FALSE)
