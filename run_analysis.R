@@ -1,6 +1,7 @@
 # John Hopkins Data Science Coursera "Getting and Cleaning Data"
 # Submitted by Jim Stearns in satisfaction of course assignment.
 # File: run_analysis.R
+# Due Date: 27-Jul-2014
 
 # Overview
 
@@ -132,11 +133,15 @@ test.and.train2 = cbind(test.and.train[,1:2],
                         test.and.train[,3:ncol(test.and.train)])
 names(test.and.train2)[3] <- "activity.desc"
 
-# 5. Eliminate all columns not having either "mean()" or "std()" in its original label.
-##  Skip gravitymean; just column labels containing ".mean" or ".std" after label tidying.
-##  Keep columns "subject", "activity", and "activity.desc".
-mean.or.std.col.indices <- grep("(\\.mean|\\.std)", feature.label.vector)
+# 5. Pare down the columns to those having either "mean()" or "std()" in its original label.
+# After tidying up replaces "()" with ".", this mean including
+# column labels with ".mean." or ".std." or ending in "mean" or "std".
+# Intentionally omitted: columns with "gravitymean" or "meanfreq". 
+regex.meanorstd <- "(\\.mean\\.|\\.mean$|\\.std\\.|\\.std$)"
+mean.or.std.col.indices <- grep(regex.meanorstd, feature.label.vector)
 mean.or.std.col.names <- feature.label.vector[mean.or.std.col.indices]
+
+# Keep columns "subject", "activity", and "activity.desc" as well as the mean/std columns.
 collist = c("subject", "activity", "activity.desc", mean.or.std.col.names)
 tidy.data.detailed <- test.and.train2[,collist]
 
@@ -159,8 +164,17 @@ write.csv(tidy.data.detailed.sorted, file="tidydata_detailed.csv.txt", row.names
 #       (.txt allows file to be uploaded to Coursera)
 library(data.table)
 detail.dt <- data.table(tidy.data.detailed.sorted)
-#summary.dt <- detail.dt[,sum(by='subject, activity']
+# Use the helpful grouping functionality of data.tables, in particular
+# "lapply" combined with the ".SD" variable and the "by" sorting specifier.
+# Please see http://stackoverflow.com/questions/16513827/r-summarizing-multiple-columns-with-data-table
+# for discussion.
+# Side-note: including activity.desc in the sequence of keys by which to sort
+#   is completely unnecessary as a sort key - the first two, subject and activity,
+#   are completely adequate. Including activity.desc in by is an easy way to make sure
+#   the column is included in the resulting data.table.
 summary.dt <- detail.dt[, lapply(.SD, mean), 
-                        by=list(subject, activity), 
+                        by=list(subject, activity, activity.desc), 
                         .SDcols=mean.or.std.col.names]
+# Write the csv file with a .txt suffix to allow upload to Coursera.
+# row.names=FALSE: don't include a row number column.
 write.csv(summary.dt, file="tidydata_summary.csv.txt", row.names=FALSE)
