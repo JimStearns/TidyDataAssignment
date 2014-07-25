@@ -145,6 +145,11 @@ mean.or.std.col.names <- feature.label.vector[mean.or.std.col.indices]
 collist = c("subject", "activity", "activity.desc", mean.or.std.col.names)
 tidy.data.detailed <- test.and.train2[,collist]
 
+# Documentation task (for data dictionary): write out data columns included and excluded.
+write.table(collist, file="tidydata_cols_included.csv", sep=",", col.names=FALSE)
+write.table(feature.label.vector[!feature.label.vector %in% collist], 
+          file="tidydata_cols_excluded.csv", sep=",", col.names=FALSE)
+
 # 6. Sort by subject, then by activity.
 tidy.data.detailed.sorted <- tidy.data.detailed[
     order(tidy.data.detailed$subject, tidy.data.detailed$activity),]
