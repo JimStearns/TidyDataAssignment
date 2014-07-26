@@ -139,10 +139,37 @@ mean.or.std.col.names <- feature.label.vector[mean.or.std.col.indices]
 collist = c("subject", "activity", "activity.desc", mean.or.std.col.names)
 tidy.data.detailed <- test.and.train2[,collist]
 
-# Documentation task (for data dictionary): write out data columns included and excluded.
-write.table(collist, file="tidydata_cols_included.csv", sep=",", col.names=FALSE)
-write.table(feature.label.vector[!feature.label.vector %in% collist], 
-          file="tidydata_cols_excluded.csv", sep=",", col.names=FALSE)
+# Documentation task (for data dictionary): write out data columns included and excluded,
+# ready for inclusion (via copy/paste) in a markdown table.
+# Mapped attributes (columns) of features.txt included in summary file:
+markdown.table.mapped.attributes <- function(from.labels, chosen.indices, to.labels) {
+    if (length(from.labels) != length(to.labels)) {
+        stop("name vectors, in and out, must be same length.")
+    }
+    dict.mapped = xv = paste("|", chosen.indices, "|", from.labels[chosen.indices], 
+                      "|", to.labels[chosen.indices], "|")
+    return(dict.mapped)
+}
+dict.included <- markdown.table.mapped.attributes(inframes$feature.labels$desc, 
+                                mean.or.std.col.indices, feature.label.vector)
+write.table(dict.included, file="datadict.included.mdtable.txt", sep="", 
+            quote=FALSE, col.names=FALSE, row.names=FALSE)
+
+# Excluded attributes (columns) of features.txt not included in summary file:
+markdown.table.excluded.attributes <- function(from.labels, included.indices) {
+    if (max(included.indices > length(from.labels))) {
+        stop("max included index cannot exceed length of labels vector.")
+    }
+    all.indices <- 1:length(from.labels)
+    excluded.indices <- all.indices[!all.indices %in% included.indices]
+    dict.excluded = paste("|", excluded.indices, "|", 
+                               from.labels[excluded.indices], "|")
+    return(dict.excluded)
+}
+dict.excluded <- markdown.table.excluded.attributes(inframes$feature.labels$desc, 
+    mean.or.std.col.indices)
+write.table(dict.excluded, file="datadict.excluded.mdtable.txt", sep="", 
+            quote=FALSE, col.names=FALSE, row.names=FALSE)
 
 # 6. Sort by subject, then by activity.
 tidy.data.detailed.sorted <- tidy.data.detailed[

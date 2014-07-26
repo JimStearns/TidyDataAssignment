@@ -2,6 +2,8 @@ TidyDataAssignment
 ==================
 
 Assignment for Johns Hopkins Data Science Coursera "Getting and Cleaning Data"
+Author: Jim Stearns
+Due Date: 27-Jul-2014
 
 ## From the instructors:
 
@@ -42,9 +44,8 @@ Here is a summary of how the input files fit together:
 * The X_train, y_train, and subject_train datasets have the same number of rows. They will be column-bound (merged horizontally).
 * The X_test, y_test datasets have the same number of rows. They will be column-bound (merged horizontally) using R's cbind method.
 
-Here's a summary of the output files:
+## Summary of the output files:
 
 1.  README.md: this MarkDown file providing overview of input, processing, and output.
-2.  tidydata_summary.csv.txt: A summary of tidy data. Uploaded to Coursera but also included in the repo. CSV format even though ".txt" was appended as well in order to simplify upload to Coursera. Contains 180 rows of summary data, 30 subjects each performing each of six activities. Header row included. 
-3.  run_analysis.R: R script that takes the 8 input files and produces the tidydata_summary output file.
-4.  CodeBook.md: a data dictionary describing the rows, columns and cell values in tidydata_summary.
+2.  run_analysis.R: R script that takes the 8 input files and produces the tidydata_summary.csv.txt output file. This should be run from the directory containing the input files.
+3.  CodeBook.md: a data dictionary describing the rows, columns and cell values in tidydata_summary.
