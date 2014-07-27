@@ -44,16 +44,25 @@ infiles$train.y = tryInPwdAndSubdir("y_train.txt", "train")
 
 #### Summary of processing ####
 # 0. Read each of the 8 input data files into its own data frame.
+#   Store as a list the data tables.
 # 1. Merge subject number, activity, and measurements in two contexts:
 #   training set and test set:
 #   - Column merge subject_test, X_test and y_test (column bind).
 #   - Column merge subject_train, X_train and y_train (column bind).
 # 2. Combine test and train data into a single file (row bind)
-# 3. Use descriptive activity names to name the activities in the data set
-#   (one option: convert activity column from integer to factor with labels 
-#   from activity_labels.txt). Or just add activityDescription column.
-# 4. Label each column with labels from features.txt.
-# 5. Eliminate all columns not having either "mean()" or "std()" in its label.
+# 3. Label each column with "tidied" labels from features.txt.
+#   By "tidied", column labels are:
+#   - all lowercase.
+#   - descriptive (avoid cryptic abbreviations). But there is a data dictionary.
+#   - avoid underscores and white spaces. My rule: allow periods, within reason:
+#       strip trailing periods, downsize a sequence of multiple periods to just one.
+#   - not duplicated.
+# 4. Use descriptive activity names to name the activities in the data set
+#   Decided to keep the activity number (1:6) and add an activity.desc column.
+# 5. Pare down the columns to those having either "mean()" or "std()" in its original label.
+# After tidying up replaces "()" with ".", this mean including
+# column labels with ".mean." or ".std." or ending in "mean" or "std".
+# Intentionally omitted: columns with "gravitymean" or "meanfreq". 
 # 6. Sort by subject, then by activity.
 # 7. Save dataset as TidyData_detailed.csv.txt
 # 8. Using this tidy but detailed file as input, create a second, independent 
